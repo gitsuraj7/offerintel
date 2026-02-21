@@ -24,6 +24,7 @@ import { Sidebar } from './components/Sidebar';
 import { Dashboard } from './components/Dashboard';
 import { LoadingOverlay } from './components/LoadingOverlay';
 import { CustomSelect } from './components/CustomSelect';
+import { COUNTRIES, INDUSTRY_POSITIONS, MAJOR_CITIES } from './constants';
 
 const INITIAL_INPUT: JobOfferInput = {
   jobTitle: '',
@@ -45,26 +46,7 @@ const INITIAL_INPUT: JobOfferInput = {
   careerGoal: 'Growth',
 };
 
-const COUNTRY_CURRENCY_MAP: Record<string, string> = {
-  'USA': 'USD',
-  'United States': 'USD',
-  'UK': 'GBP',
-  'United Kingdom': 'GBP',
-  'Germany': 'EUR',
-  'France': 'EUR',
-  'Japan': 'JPY',
-  'Canada': 'CAD',
-  'Australia': 'AUD',
-  'Switzerland': 'CHF',
-  'Singapore': 'SGD',
-  'UAE': 'AED',
-  'India': 'INR',
-};
-
-const INDUSTRIES: Industry[] = [
-  'Technology', 'Healthcare', 'Finance', 'Engineering', 'Education', 
-  'Government', 'Logistics', 'Marketing', 'Manufacturing', 'Other'
-];
+const INDUSTRIES = Object.keys(INDUSTRY_POSITIONS) as Industry[];
 
 function AppContent() {
   const [input, setInput] = useState<JobOfferInput>(INITIAL_INPUT);
@@ -76,11 +58,11 @@ function AppContent() {
   const { savedOffers, deleteOffer } = useOffers();
   const [selectedForComparison, setSelectedForComparison] = useState<string[]>([]);
 
-  // Auto-detect currency
+  // Auto-detect currency and handle country change
   useEffect(() => {
-    const detected = COUNTRY_CURRENCY_MAP[input.country];
-    if (detected && detected !== input.currency) {
-      setInput(prev => ({ ...prev, currency: detected }));
+    const countryData = COUNTRIES.find(c => c.name === input.country);
+    if (countryData && countryData.currency !== input.currency) {
+      setInput(prev => ({ ...prev, currency: countryData.currency }));
     }
   }, [input.country]);
 
@@ -108,7 +90,6 @@ function AppContent() {
     if (input.signingBonus < 0) errors.signingBonus = 'Cannot be negative';
     if (input.yearsOfExperience < 0) errors.yearsOfExperience = 'Cannot be negative';
     if (input.currentSalary && input.currentSalary < 0) errors.currentSalary = 'Cannot be negative';
-    if (input.estimatedMonthlyRent && input.estimatedMonthlyRent < 0) errors.estimatedMonthlyRent = 'Cannot be negative';
     return errors;
   }, [input]);
 
@@ -133,7 +114,7 @@ function AppContent() {
 
   const handleFinancialInput = (field: keyof JobOfferInput, value: string) => {
     if (value.includes('-')) return;
-    const numValue = Number(value);
+    const numValue = Math.floor(Number(value));
     setInput(prev => ({ ...prev, [field]: numValue }));
   };
 
@@ -160,45 +141,56 @@ function AppContent() {
               <form onSubmit={handleSubmit} className="luxury-card p-6 sm:p-8 lg:p-12 space-y-8 sm:space-y-10">
                 <div className="grid sm:grid-cols-2 gap-6 sm:gap-8">
                   <div className="space-y-2">
-                    <label className="text-[10px] font-bold uppercase tracking-[0.3em] text-[var(--text-muted)]">Position</label>
-                    <input 
-                      required
-                      className="w-full bg-white/5 border-b border-[var(--border)] py-3 sm:py-4 outline-none focus:border-[var(--accent)] transition-colors text-lg sm:text-xl font-medium"
-                      placeholder="Job Title"
-                      value={input.jobTitle}
-                      onChange={e => setInput({...input, jobTitle: e.target.value})}
-                    />
-                  </div>
-                  <div className="space-y-2">
                     <CustomSelect 
                       label="Industry"
                       options={INDUSTRIES.map(ind => ({ value: ind, label: ind }))}
                       value={input.industry}
-                      onChange={val => setInput({...input, industry: val as Industry})}
+                      onChange={val => setInput({...input, industry: val as Industry, jobTitle: ''})}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <CustomSelect 
+                      label="Position"
+                      options={(INDUSTRY_POSITIONS[input.industry] || []).map(pos => ({ value: pos, label: pos }))}
+                      value={input.jobTitle}
+                      onChange={val => setInput({...input, jobTitle: val})}
                     />
                   </div>
                 </div>
 
                 <div className="grid sm:grid-cols-2 gap-6 sm:gap-8">
                   <div className="space-y-2">
-                    <label className="text-[10px] font-bold uppercase tracking-[0.3em] text-[var(--text-muted)]">Location</label>
-                    <div className="grid grid-cols-2 gap-4">
-                      <input 
-                        required
-                        className="w-full bg-white/5 border-b border-[var(--border)] py-3 sm:py-4 outline-none focus:border-[var(--accent)] transition-colors text-lg sm:text-xl font-medium"
-                        placeholder="City"
-                        value={input.city}
-                        onChange={e => setInput({...input, city: e.target.value})}
-                      />
-                      <input 
-                        required
-                        className="w-full bg-white/5 border-b border-[var(--border)] py-3 sm:py-4 outline-none focus:border-[var(--accent)] transition-colors text-lg sm:text-xl font-medium"
-                        placeholder="Country"
-                        value={input.country}
-                        onChange={e => setInput({...input, country: e.target.value})}
-                      />
-                    </div>
+                    <CustomSelect 
+                      label="Country"
+                      options={COUNTRIES.map(c => ({ value: c.name, label: c.name }))}
+                      value={input.country}
+                      onChange={val => setInput({...input, country: val, city: ''})}
+                    />
                   </div>
+                  <div className="space-y-2">
+                    {MAJOR_CITIES[input.country] ? (
+                      <CustomSelect 
+                        label="City"
+                        options={MAJOR_CITIES[input.country].map(city => ({ value: city, label: city }))}
+                        value={input.city}
+                        onChange={val => setInput({...input, city: val})}
+                      />
+                    ) : (
+                      <>
+                        <label className="text-[10px] font-bold uppercase tracking-[0.3em] text-[var(--text-muted)]">City</label>
+                        <input 
+                          required
+                          className="w-full bg-white/5 border-b border-[var(--border)] py-3 sm:py-4 outline-none focus:border-[var(--accent)] transition-colors text-lg sm:text-xl font-medium"
+                          placeholder="Enter City"
+                          value={input.city}
+                          onChange={e => setInput({...input, city: e.target.value})}
+                        />
+                      </>
+                    )}
+                  </div>
+                </div>
+
+                <div className="grid sm:grid-cols-2 gap-6 sm:gap-8">
                   <div className="space-y-2">
                     <label className="text-[10px] font-bold uppercase tracking-[0.3em] text-[var(--text-muted)]">Base Compensation</label>
                     <div className="flex items-center gap-4">
@@ -207,6 +199,7 @@ function AppContent() {
                           required
                           type="number"
                           min="0"
+                          step="1"
                           className={cn(
                             "w-full bg-white/5 border-b py-3 sm:py-4 outline-none transition-colors text-lg sm:text-xl font-medium",
                             financialErrors.grossAnnualSalary ? "border-rose-500" : "border-[var(--border)] focus:border-[var(--accent)]"
@@ -226,40 +219,6 @@ function AppContent() {
                       />
                     </div>
                   </div>
-                </div>
-
-                <div className="grid sm:grid-cols-2 gap-6 sm:gap-8">
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-bold uppercase tracking-[0.3em] text-[var(--text-muted)]">Current Benchmark (Optional)</label>
-                    <div className="grid grid-cols-2 gap-4">
-                      <input 
-                        type="number"
-                        className="w-full bg-white/5 border-b border-[var(--border)] py-3 sm:py-4 outline-none focus:border-[var(--accent)] transition-colors text-lg sm:text-xl font-medium"
-                        placeholder="Current Salary"
-                        value={input.currentSalary || ''}
-                        onChange={e => handleFinancialInput('currentSalary', e.target.value)}
-                      />
-                      <input 
-                        className="w-full bg-white/5 border-b border-[var(--border)] py-3 sm:py-4 outline-none focus:border-[var(--accent)] transition-colors text-lg sm:text-xl font-medium"
-                        placeholder="Current Country"
-                        value={input.currentCountry || ''}
-                        onChange={e => setInput({...input, currentCountry: e.target.value})}
-                      />
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-bold uppercase tracking-[0.3em] text-[var(--text-muted)]">Custom Rent (Optional)</label>
-                    <input 
-                      type="number"
-                      className="w-full bg-white/5 border-b border-[var(--border)] py-3 sm:py-4 outline-none focus:border-[var(--accent)] transition-colors text-lg sm:text-xl font-medium"
-                      placeholder="Monthly Rent"
-                      value={input.estimatedMonthlyRent || ''}
-                      onChange={e => handleFinancialInput('estimatedMonthlyRent', e.target.value)}
-                    />
-                  </div>
-                </div>
-
-                <div className="grid sm:grid-cols-2 gap-6 sm:gap-8 pt-4">
                   <div className="space-y-2">
                     <label className="text-[10px] font-bold uppercase tracking-[0.3em] text-[var(--text-muted)]">Experience</label>
                     <div className="relative">
@@ -267,6 +226,7 @@ function AppContent() {
                         required
                         type="number"
                         min="0"
+                        step="1"
                         className={cn(
                           "w-full bg-white/5 border-b py-3 sm:py-4 outline-none transition-colors text-lg sm:text-xl font-medium",
                           financialErrors.yearsOfExperience ? "border-rose-500" : "border-[var(--border)] focus:border-[var(--accent)]"
@@ -278,6 +238,28 @@ function AppContent() {
                       {financialErrors.yearsOfExperience && (
                         <span className="absolute -bottom-5 left-0 text-[10px] text-rose-500 font-bold uppercase">{financialErrors.yearsOfExperience}</span>
                       )}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="grid sm:grid-cols-2 gap-6 sm:gap-8">
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-bold uppercase tracking-[0.3em] text-[var(--text-muted)]">Current Benchmark (Optional)</label>
+                    <div className="grid grid-cols-2 gap-4">
+                      <input 
+                        type="number"
+                        step="1"
+                        className="w-full bg-white/5 border-b border-[var(--border)] py-3 sm:py-4 outline-none focus:border-[var(--accent)] transition-colors text-lg sm:text-xl font-medium"
+                        placeholder="Current Salary"
+                        value={input.currentSalary || ''}
+                        onChange={e => handleFinancialInput('currentSalary', e.target.value)}
+                      />
+                      <input 
+                        className="w-full bg-white/5 border-b border-[var(--border)] py-3 sm:py-4 outline-none focus:border-[var(--accent)] transition-colors text-lg sm:text-xl font-medium"
+                        placeholder="Current Country"
+                        value={input.currentCountry || ''}
+                        onChange={e => setInput({...input, currentCountry: e.target.value})}
+                      />
                     </div>
                   </div>
                   <div className="space-y-2">
