@@ -89,8 +89,13 @@ Return your analysis in a structured JSON format that matches the following sche
 Be analytical, structured, and decisive. No fluff.`;
 
 export async function analyzeOffer(input: JobOfferInput) {
-  const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-  const model = "gemini-3.1-pro-preview";
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) {
+    throw new Error("Gemini API Key is missing. Please configure it in the Secrets panel.");
+  }
+
+  const ai = new GoogleGenAI({ apiKey });
+  const model = "gemini-3-flash-preview"; // Using flash for better stability and speed in shared environments
 
   const prompt = `Analyze the following job offer:
 ${JSON.stringify(input, null, 2)}
@@ -99,19 +104,56 @@ Current Date: ${new Date().toLocaleDateString()}
 City/Country: ${input.city}, ${input.country}
 `;
 
-  const response = await ai.models.generateContent({
-    model,
-    contents: prompt,
-    config: {
-      systemInstruction: SYSTEM_INSTRUCTION,
-      responseMimeType: "application/json",
-      tools: [{ googleSearch: {} }],
-    },
-  });
+  try {
+    const response = await ai.models.generateContent({
+      model,
+      contents: prompt,
+      config: {
+        systemInstruction: SYSTEM_INSTRUCTION,
+        responseMimeType: "application/json",
+        tools: [{ googleSearch: {} }],
+      },
+    });
 
-  if (!response.text) {
-    throw new Error("Failed to generate analysis");
+    if (!response.text) {
+      throw new Error("The AI engine returned an empty response.");
+    }
+
+    let jsonStr = response.text.trim();
+    // Robust JSON extraction in case the model wraps it in markdown blocks
+    if (jsonStr.includes("```json")) {
+      jsonStr = jsonStr.split("```json")[1].split("```")[0].trim();
+    } else if (jsonStr.includes("```")) {
+      jsonStr = jsonStr.split("```")[1].split("```")[0].trim();
+    }
+
+    return JSON.parse(jsonStr);
+  } catch (err: any) {
+    console.error("Primary analysis failed:", err);
+    
+    // Fallback: Try without Google Search if the first attempt fails (common for restricted keys)
+    if (err.message?.includes("search") || err.message?.includes("tool") || err.status === 400) {
+      try {
+        const fallbackResponse = await ai.models.generateContent({
+          model,
+          contents: prompt,
+          config: {
+            systemInstruction: SYSTEM_INSTRUCTION + "\n\nNOTE: Search tool is unavailable. Use your internal knowledge base for the latest data.",
+            responseMimeType: "application/json",
+          },
+        });
+        
+        let jsonStr = fallbackResponse.text.trim();
+        if (jsonStr.includes("```json")) {
+          jsonStr = jsonStr.split("```json")[1].split("```")[0].trim();
+        }
+        return JSON.parse(jsonStr);
+      } catch (fallbackErr) {
+        console.error("Fallback analysis failed:", fallbackErr);
+        throw new Error("Analysis failed. Please try again in a few moments.");
+      }
+    }
+    
+    throw err;
   }
-
-  return JSON.parse(response.text);
 }

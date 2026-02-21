@@ -104,9 +104,9 @@ function AppContent() {
     try {
       const analysis = await analyzeOffer(input);
       setResult(analysis);
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      setError('Failed to analyze offer. Please check your inputs and try again.');
+      setError(err.message || 'Failed to analyze offer. Please check your inputs and try again.');
     } finally {
       setLoading(false);
     }
