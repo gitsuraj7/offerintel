@@ -1,0 +1,167 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Outfit:wght@300;400;500;600;700;800;900&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Outfit", sans-serif;
+}
+
+@layer base {
+  :root {
+    --bg: #0B0D12;
+    --card: #141821;
+    --accent: #7C3AED;
+    --text: #F8FAFC;
+    --text-muted: #94A3B8;
+    --border: rgba(255, 255, 255, 0.08);
+    --glow: rgba(124, 58, 237, 0.2);
+  }
+
+  :root[data-theme='light-wealth'] {
+    --bg: #F2F4F8;
+    --card: #FFFFFF;
+    --accent: #1E293B;
+    --text: #0F172A;
+    --text-muted: #64748B;
+    --border: rgba(15, 23, 42, 0.08);
+    --glow: rgba(30, 41, 59, 0.05);
+    --gold: #D4AF37;
+  }
+
+  :root[data-theme='violet-elite'] {
+    --bg: #0B0D12;
+    --card: #141821;
+    --accent: #A855F7;
+    --text: #F8FAFC;
+    --text-muted: #94A3B8;
+    --border: rgba(168, 85, 247, 0.2);
+    --glow: rgba(168, 85, 247, 0.3);
+  }
+
+  html, body {
+    @apply font-sans bg-[var(--bg)] text-[var(--text)] transition-colors duration-500;
+    overflow-x: hidden;
+    width: 100%;
+    position: relative;
+  }
+}
+
+@layer components {
+  .luxury-card {
+    @apply bg-[var(--card)] border border-[var(--border)] rounded-xl shadow-xl backdrop-blur-md transition-all duration-300;
+  }
+
+  .luxury-card:hover {
+    @apply lg:-translate-y-1;
+    box-shadow: 0 15px 30px -10px var(--glow);
+  }
+
+  .luxury-button {
+    @apply relative overflow-hidden bg-[var(--accent)] text-white font-bold py-3 px-6 rounded-lg transition-all duration-300 shadow-lg;
+  }
+
+  .luxury-button:hover {
+    @apply -translate-y-0.5 shadow-xl;
+    box-shadow: 0 10px 20px -5px var(--glow);
+  }
+
+  .luxury-button::after {
+    content: '';
+    @apply absolute top-0 -left-full w-full h-full bg-gradient-to-r from-transparent via-white/20 to-transparent transition-all duration-500;
+  }
+
+  .luxury-button:hover::after {
+    @apply left-full;
+  }
+
+  .theme-wash {
+    position: fixed;
+    top: -150%;
+    left: -150%;
+    width: 300%;
+    height: 300%;
+    background: var(--bg);
+    z-index: 9999;
+    transform: rotate(-45deg);
+    pointer-events: none;
+  }
+}
+
+.prose h1, .prose h2, .prose h3, .prose h4 {
+  @apply text-[var(--text)] font-display font-bold mt-8 mb-4;
+}
+
+.prose p {
+  @apply mb-4 leading-relaxed text-[var(--text-muted)];
+}
+
+.prose ul {
+  @apply list-disc pl-5 mb-4 space-y-2;
+}
+
+.prose li {
+  @apply text-[var(--text-muted)];
+}
+
+.prose table {
+  @apply w-full border-collapse mb-6;
+}
+
+.prose th {
+  @apply bg-[var(--card)] text-left p-3 text-xs font-bold uppercase tracking-wider text-[var(--text-muted)] border border-[var(--border)];
+}
+
+.prose td {
+  @apply p-3 text-sm text-[var(--text-muted)] border border-[var(--border)];
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-muted);
+}
+
+/* Animated Particles for Violet Elite */
+@keyframes float {
+  0% { transform: translateY(0px) translateX(0px); opacity: 0; }
+  50% { opacity: 0.5; }
+  100% { transform: translateY(-100vh) translateX(20px); opacity: 0; }
+}
+
+.particle {
+  position: absolute;
+  background: var(--accent);
+  border-radius: 50%;
+  filter: blur(2px);
+  pointer-events: none;
+  animation: float linear infinite;
+}
+
+@media (max-height: 700px) {
+  .hide-on-short {
+    display: none !important;
+  }
+  .sidebar-container {
+    width: 5rem !important; /* w-20 */
+  }
+  .sidebar-content-compact {
+    padding-left: 1rem !important;
+    padding-right: 1rem !important;
+    justify-content: center !important;
+  }
+  .theme-switch-container {
+    flex-direction: column !important;
+  }
+}
